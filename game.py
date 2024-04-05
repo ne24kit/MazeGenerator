@@ -1,15 +1,17 @@
 import pygame
 from solve import *
 from maze import Maze, Cell, alg_DFS, alg_Prim
+from time import time
 
 
 class Globals():
-    START_COLOR = (255, 255, 0)
-    END_COLOR = (100, 194, 237)
-    COLOR = (255, 100, 98) 
+    START_COLOR   = (255, 255, 0)
+    END_COLOR     = (100, 194, 237)
+    COLOR         = (255, 100, 98) 
     SURFACE_COLOR = (167, 255, 100) 
-    PATH_COLOR = (80, 200, 120) 
+    PATH_COLOR    = (80,  200, 120) 
     CELL_SIZE = 20
+    END_FLAG = False
 # TODO: use this function in more places
 def size_convert(value):
     return (2 * value + 1) * Globals.CELL_SIZE
@@ -68,6 +70,7 @@ class MazeWithGraphics(Maze):
         return solution_sprites_list
 
 
+
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__() 
@@ -76,11 +79,13 @@ class Player(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = 1.25 * Globals.CELL_SIZE, 1.25 * Globals.CELL_SIZE
     
     
-    def update(self, walls_sprites_list, group_players):
+    def update(self, walls_sprites_list, end_cell):
+        global end_flag
         self.speedx = 0
         self.speedy = 0
-        keystate = pygame.key.get_pressed()
+        old_x, old_y = self.rect.topleft
         
+        keystate = pygame.key.get_pressed()
         
         if keystate[pygame.K_LEFT]:
             self.speedx = -2
@@ -90,19 +95,20 @@ class Player(pygame.sprite.Sprite):
             self.speedy = 2
         if keystate[pygame.K_UP]:
             self.speedy = -2
-        
-        #как - нибудь .copy()
+
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         
-        hits = pygame.sprite.groupcollide(walls_sprites_list, group_players,  False, False)
-        for hit in hits.keys():
-            if hit.rect.right >= self.rect.left or hit.rect.left <= self.rect.right:
-                self.rect.x += -self.speedx
-            if hit.rect.top <= self.rect.bottom or hit.rect.bottom >= self.rect.top:
-                self.rect.y += -self.speedy
+        for wall in walls_sprites_list:
+            if self.rect.colliderect(wall.rect):
+                self.rect.x = old_x
+                self.rect.y = old_y
+
+        # TODO: Add check on end cell
+        if self.rect.colliderect(end_cell.rect):
+            Globals.END_FLAG = True
+            
         
-    
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
@@ -114,7 +120,6 @@ def start_game(alg, width, height, filename, solution):
     else:
         my_maze = MazeWithGraphics(alg, (width, height), sol=solution)
 
-   
     screen = pygame.display.set_mode((size_convert(my_maze.width), size_convert(my_maze.height)))
 
     pygame.display.set_caption("Try to solve!")
@@ -124,22 +129,23 @@ def start_game(alg, width, height, filename, solution):
     
     walls_sprites_list = my_maze.add_walls_to_group()
     solution_sprites_list = my_maze.add_solution_to_group()
-    start_end_cells = my_maze.add_start_end_to_group()
-    
+    start_end_cells = my_maze.add_start_end_to_group()  
 
     player = Player()
     group_players = pygame.sprite.Group()
     group_players.add(player)
-    
+    start_time = time()
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: 
+            if event.type == pygame.QUIT or Globals.END_FLAG: 
+                print(f"Not bad, but try to solve it again\nTIME: {time() - start_time:.2f} sec")
                 pygame.quit()  
                 quit()
 
         walls_sprites_list.update() 
         solution_sprites_list.update()
-        group_players.update(walls_sprites_list, group_players)
+        group_players.update(walls_sprites_list, start_end_cells.sprites()[1])
+
         start_end_cells.update()
 
 
