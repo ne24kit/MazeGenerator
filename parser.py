@@ -30,9 +30,9 @@ def play_game(args):
     
     match(args.algorithm):
         case "DFS":
-            start_game(alg_DFS, args.size[0], args.size[1], args.filename, args.solution)
+            start_game(alg_DFS, args.size[0], args.size[1], args.filename, args.solution, args.players)
         case "Prim":
-            start_game(alg_Prim, args.size[0], args.size[1], args.filename, args.solution)
+            start_game(alg_Prim, args.size[0], args.size[1], args.filename, args.solution, args.players)
 
 def generator(args):
     print("Start generator")
@@ -52,10 +52,11 @@ if __name__ == "__main__":
     group.add_argument('-f', "--filename", help="Подгружает уже созданный лабиринт, введите <filename.txt>", type=str)
 
     parser.add_argument("-a", "--algorithm", help="Выберете алгоритм генерации", type=str, choices=['DFS', 'Prim'], default='DFS')
-    parser.add_argument("-sol", "--solution", help="Лабиринт с решением", action='store_true', default = False)
+    parser.add_argument("-sol", "--solution", help="Лабиринт с решением", action='store_true', default=False)
     subparsers = parser.add_subparsers(title='mods', help='Режим работы программы game/generator', required=True)
 
     parser_game = subparsers.add_parser("game", help="Начинает игру")
+    parser_game.add_argument("-p", "--players", help="Количество игроков", type=int, choices=[1, 2], default=1)
     parser_game.set_defaults(func=play_game)
     
     parser_generator = subparsers.add_parser("generator", help="Режим генерации лабринта")

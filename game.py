@@ -11,7 +11,7 @@ class Globals():
     SURFACE_COLOR = (167, 255, 100) 
     PATH_COLOR    = (80,  200, 120) 
     CELL_SIZE = 20
-    END_FLAG = False
+    END_GAME_TIME = [False, True]
 # TODO: use this function in more places
 def size_convert(value):
     return (2 * value + 1) * Globals.CELL_SIZE
@@ -72,9 +72,12 @@ class MazeWithGraphics(Maze):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, num=0):
         super().__init__() 
-        self.image = pygame.image.load("Player.png")
+        self.num = num
+        self.image = pygame.image.load("Player_blue.png")
+        if self.num:
+            self.image = pygame.image.load("Player_red.png")
         self.rect = self.image.get_rect()
         self.rect.x, self.rect.y = 1.25 * Globals.CELL_SIZE, 1.25 * Globals.CELL_SIZE
     
@@ -86,14 +89,18 @@ class Player(pygame.sprite.Sprite):
         old_x, old_y = self.rect.topleft
         
         keystate = pygame.key.get_pressed()
-        
-        if keystate[pygame.K_LEFT]:
+        keys = {'left':  (pygame.K_LEFT,  pygame.K_a),
+                'right': (pygame.K_RIGHT, pygame.K_d),
+                'down':  (pygame.K_DOWN,  pygame.K_s),
+                'up':    (pygame.K_UP,    pygame.K_w)}
+
+        if keystate[keys['left'][self.num]]:
             self.speedx = -2
-        if keystate[pygame.K_RIGHT]:
+        if keystate[keys['right'][self.num]]:
             self.speedx = 2
-        if keystate[pygame.K_DOWN]:
+        if keystate[keys['down'][self.num]]:
             self.speedy = 2
-        if keystate[pygame.K_UP]:
+        if keystate[keys['up'][self.num]]:
             self.speedy = -2
 
         self.rect.x += self.speedx
@@ -105,15 +112,15 @@ class Player(pygame.sprite.Sprite):
                 self.rect.y = old_y
 
         # TODO: Add check on end cell
-        if self.rect.colliderect(end_cell.rect):
-            Globals.END_FLAG = True
+        if self.rect.colliderect(end_cell.rect) and not Globals.END_GAME_TIME[self.num]:
+            Globals.END_GAME_TIME[self.num] = time()
             
         
     def draw(self, surface):
         surface.blit(self.image, self.rect)
 
 
-def start_game(alg, width, height, filename, solution):
+def start_game(alg, width, height, filename, solution, players_count):
     pygame.init()
     if filename:
         my_maze = MazeWithGraphics.upload(filename, alg, solution)
@@ -127,18 +134,33 @@ def start_game(alg, width, height, filename, solution):
     pygame.display.set_icon(pygame_icon)
     clock = pygame.time.Clock() 
     
+
     walls_sprites_list = my_maze.add_walls_to_group()
     solution_sprites_list = my_maze.add_solution_to_group()
     start_end_cells = my_maze.add_start_end_to_group()  
 
-    player = Player()
+    player_0 = Player(0)
     group_players = pygame.sprite.Group()
-    group_players.add(player)
+    group_players.add(player_0)
+
+    if players_count == 2:
+        player_1 = Player(1)
+        group_players.add(player_1)
+        Globals.END_GAME_TIME[1] = False
     start_time = time()
+
     while True:
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or Globals.END_FLAG: 
-                print(f"Not bad, but try to solve it again\nTIME: {time() - start_time:.2f} sec")
+            if event.type == pygame.QUIT:
+                print("You couldn't solve it!")
+                pygame.quit()  
+                quit()
+
+            if Globals.END_GAME_TIME[0] and Globals.END_GAME_TIME[1]: 
+                print(f"BLUE TIME: {Globals.END_GAME_TIME[0] - start_time:.2f} sec")
+                if players_count == 2:
+                    print(f"RED TIME: {Globals.END_GAME_TIME[1] - start_time:.2f} sec")
+                    print(f"WINNER: {'RED' if Globals.END_GAME_TIME[1] < Globals.END_GAME_TIME[0] else 'BLUE'}")
                 pygame.quit()  
                 quit()
 
@@ -157,3 +179,5 @@ def start_game(alg, width, height, filename, solution):
         
         pygame.display.flip() 
         clock.tick(60)
+
+
