@@ -1,5 +1,5 @@
 import random
-
+from time import strftime
 from solve import *
 
 
@@ -59,6 +59,12 @@ class Maze:
         if run_alg:
             algorithm(self)
 
+    def get_random_cell(self):
+        while self.maze[y := 2 * random.randint(1, self.height - 1) + 1][x := 2 * random.randint(1, self.width - 1) + 1] != 0:
+            pass
+        
+        self.maze[y][x] = -1
+        return x, y
     
     def get_walls(self, cell):
         walls = []
@@ -89,7 +95,8 @@ class Maze:
 
 
     def save(self):
-        with open("maze.txt", "w") as file:
+        timestr = strftime("%H_%M_%S-%d_%m_%Y")
+        with open("maze_"+timestr+".txt", "w") as file:
             file.writelines(["".join(row) + '\n' for row in self.maze])
     
 
