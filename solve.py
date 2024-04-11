@@ -85,7 +85,8 @@ def astar(start, end, maze):
                 # Если новое расстояние до соседнего узла меньше, чем старое, обновляем значения g, h и f
                 if new_g < nfo.g:
                     nfo.g = new_g
-                    nfo.h = (end_node.x - nfo.x) ** 2 + (end_node.y - nfo.y) ** 2
+                    nfo.h = (end_node.x - nfo.x) ** 2 + \
+                        (end_node.y - nfo.y) ** 2
                     nfo.f = nfo.g + nfo.h
                     nfo.parent = current_node
                     # Обновляем приоритет соседнего узла в очереди с приоритетами
@@ -93,7 +94,8 @@ def astar(start, end, maze):
             else:
                 # Иначе добавляем соседний узел в очередь с приоритетами и вычисляем значения g, h и f
                 neighbor.g = new_g
-                neighbor.h = (end_node.x - neighbor.x) ** 2 + (end_node.y - neighbor.y) ** 2
+                neighbor.h = (end_node.x - neighbor.x) ** 2 + \
+                    (end_node.y - neighbor.y) ** 2
                 neighbor.f = neighbor.g + neighbor.h
                 neighbor.parent = current_node
                 heapq.heappush(open_list, neighbor)
