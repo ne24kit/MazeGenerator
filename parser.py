@@ -30,9 +30,9 @@ def play_game(args):
     
     match(args.algorithm):
         case "DFS":
-            start_game(alg_DFS, args.size[0], args.size[1], args.filename, args.solution, args.players)
+            start_game(alg_DFS, args.size[0], args.size[1], args.filename, args.solution, args.players, args.bonuses)
         case "Prim":
-            start_game(alg_Prim, args.size[0], args.size[1], args.filename, args.solution, args.players)
+            start_game(alg_Prim, args.size[0], args.size[1], args.filename, args.solution, args.players, args.bonuses)
 
 def generator(args):
     print("Start generator")
@@ -57,6 +57,7 @@ if __name__ == "__main__":
 
     parser_game = subparsers.add_parser("game", help="Начинает игру")
     parser_game.add_argument("-p", "--players", help="Количество игроков", type=int, choices=[1, 2], default=1)
+    parser_game.add_argument("-b", "--bonuses", help="Игра с бонусами: speed up, speed down, telepot", action='store_true', default=False)
     parser_game.set_defaults(func=play_game)
     
     parser_generator = subparsers.add_parser("generator", help="Режим генерации лабринта")

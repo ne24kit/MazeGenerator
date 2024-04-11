@@ -1,8 +1,9 @@
 import pygame
 from solve import *
-from maze import Maze, Cell, alg_DFS, alg_Prim
+from maze import Maze, Cell
 from time import time
 
+#TODO: сhange the length of the formation
 
 class Globals():
     START_COLOR   = (255, 255, 0)
@@ -12,18 +13,26 @@ class Globals():
     PATH_COLOR    = (80,  200, 120) 
     CELL_SIZE = 20
     END_GAME_TIME = [False, True]
+    COUNT_DESTROYED_WALLS = [0, 0]
+
 # TODO: use this function in more places
 def size_convert(value):
     return (2 * value + 1) * Globals.CELL_SIZE
 
 
 class MazeElementWithGraphics(Cell, pygame.sprite.Sprite):
-    def __init__(self, x, y, value):
+    def __init__(self, x, y, value, sol):
         Cell.__init__(self, x, y)
         pygame.sprite.Sprite.__init__(self)
         self.value = value
         self.image = pygame.Surface([Globals.CELL_SIZE, Globals.CELL_SIZE])
-        color = [Globals.SURFACE_COLOR, Globals.COLOR, Globals.PATH_COLOR, Globals.START_COLOR, Globals.END_COLOR]
+        
+        color = [Globals.SURFACE_COLOR, 
+                 Globals.COLOR, 
+                 Globals.PATH_COLOR if sol else Globals.SURFACE_COLOR, 
+                 Globals.START_COLOR, 
+                 Globals.END_COLOR]
+        
         self.image.fill(color[value])
         pygame.draw.rect(self.image, color[value], pygame.Rect(x * Globals.CELL_SIZE, y * Globals.CELL_SIZE, Globals.CELL_SIZE, Globals.CELL_SIZE)) 
         self.rect = self.image.get_rect()
@@ -31,12 +40,34 @@ class MazeElementWithGraphics(Cell, pygame.sprite.Sprite):
         self.rect.y = y * Globals.CELL_SIZE
 
 
+class MazeBonuses(pygame.sprite.Sprite):
+    def __init__(self, x, y, type):
+        super().__init__()
+        self.type = type
+        self.image = pygame.image.load("bonus.png")
+        self.rect = self.image.get_rect()
+        self.rect.x = x * Globals.CELL_SIZE
+        self.rect.y = y * Globals.CELL_SIZE
+
+    def update(self, player, maze):
+        if self.rect.colliderect(player.rect) and self.type == "speed_up":
+            player.speed *= 1.1
+            self.kill()
+        if self.rect.colliderect(player.rect) and self.type == "speed_down":
+            player.speed *= 0.9
+            self.kill()
+        if self.rect.colliderect(player.rect) and self.type == "teleport":
+            x, y = maze.get_random_cell()
+            player.rect.x, player.rect.y = x * Globals.CELL_SIZE, y * Globals.CELL_SIZE
+            self.kill()
+
+
 class MazeWithGraphics(Maze):
     def __init__(self, algorithm, size, run_alg=True, sol=False):
         super().__init__(algorithm, size, run_alg)
-        if sol:
-            self.solve()
-        self.elems_to_draw = [[MazeElementWithGraphics(i, j, self.maze[j][i]) for i in range(2 * self.width + 1)] for j in range(2 * self.height + 1)]
+        
+        self.solve()
+        self.elems_to_draw = [[MazeElementWithGraphics(i, j, self.maze[j][i], sol) for i in range(2 * self.width + 1)] for j in range(2 * self.height + 1)]
 
 
     @classmethod        
@@ -52,8 +83,8 @@ class MazeWithGraphics(Maze):
         start_end_cells = pygame.sprite.Group()
         self.maze[1][1] = 3
         self.maze[2 * self.height - 1][2 * self.width - 1] = 4
-        self.elems_to_draw[1][1] = MazeElementWithGraphics(1, 1, self.maze[1][1])
-        self.elems_to_draw[2 * self.height - 1][2 * self.width - 1] = MazeElementWithGraphics(2 * self.width - 1, 2 * self.height - 1, self.maze[2 * self.height - 1][2 * self.width - 1])
+        self.elems_to_draw[1][1] = MazeElementWithGraphics(1, 1, self.maze[1][1], None)
+        self.elems_to_draw[2 * self.height - 1][2 * self.width - 1] = MazeElementWithGraphics(2 * self.width - 1, 2 * self.height - 1, self.maze[2 * self.height - 1][2 * self.width - 1], None)
         start_end_cells.add(self.elems_to_draw[1][1], self.elems_to_draw[2 * self.height - 1][2 * self.width - 1])
         return start_end_cells
 
@@ -70,11 +101,11 @@ class MazeWithGraphics(Maze):
         return solution_sprites_list
 
 
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, num=0):
         super().__init__() 
         self.num = num
+        self.speed = 2
         self.image = pygame.image.load("Player_blue.png")
         if self.num:
             self.image = pygame.image.load("Player_red.png")
@@ -82,34 +113,47 @@ class Player(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = 1.25 * Globals.CELL_SIZE, 1.25 * Globals.CELL_SIZE
     
     
-    def update(self, walls_sprites_list, end_cell):
+    def update(self, walls_sprites_list, end_cell, width_limit, height_limit, bonuses):
         global end_flag
         self.speedx = 0
         self.speedy = 0
         old_x, old_y = self.rect.topleft
         
         keystate = pygame.key.get_pressed()
-        keys = {'left':  (pygame.K_LEFT,  pygame.K_a),
-                'right': (pygame.K_RIGHT, pygame.K_d),
-                'down':  (pygame.K_DOWN,  pygame.K_s),
-                'up':    (pygame.K_UP,    pygame.K_w)}
+        keys = {'left':    (pygame.K_LEFT,  pygame.K_a),
+                'right':   (pygame.K_RIGHT, pygame.K_d),
+                'down':    (pygame.K_DOWN,  pygame.K_s),
+                'up':      (pygame.K_UP,    pygame.K_w),
+                'destroy': (pygame.K_RSHIFT, pygame.K_LSHIFT)}
 
         if keystate[keys['left'][self.num]]:
-            self.speedx = -2
+            self.speedx = -self.speed
         if keystate[keys['right'][self.num]]:
-            self.speedx = 2
+            self.speedx = self.speed
         if keystate[keys['down'][self.num]]:
-            self.speedy = 2
+            self.speedy = self.speed
         if keystate[keys['up'][self.num]]:
-            self.speedy = -2
+            self.speedy = -self.speed
 
         self.rect.x += self.speedx
         self.rect.y += self.speedy
         
+
+        if self.rect.left <= 0 or self.rect.right >= width_limit:
+            self.rect.x = old_x
+        
+        if self.rect.top <= 0 or self.rect.bottom >= height_limit:
+            self.rect.y = old_y
+    
+
         for wall in walls_sprites_list:
             if self.rect.colliderect(wall.rect):
                 self.rect.x = old_x
                 self.rect.y = old_y
+                if keystate[keys['destroy'][self.num]] and Globals.COUNT_DESTROYED_WALLS[self.num] < 3 and bonuses:
+                    Globals.COUNT_DESTROYED_WALLS[self.num] += 1 
+                    wall.kill()
+                
 
         # TODO: Add check on end cell
         if self.rect.colliderect(end_cell.rect) and not Globals.END_GAME_TIME[self.num]:
@@ -120,7 +164,7 @@ class Player(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect)
 
 
-def start_game(alg, width, height, filename, solution, players_count):
+def start_game(alg, width, height, filename, solution, players_count, bonuses):
     pygame.init()
     if filename:
         my_maze = MazeWithGraphics.upload(filename, alg, solution)
@@ -137,7 +181,14 @@ def start_game(alg, width, height, filename, solution, players_count):
 
     walls_sprites_list = my_maze.add_walls_to_group()
     solution_sprites_list = my_maze.add_solution_to_group()
-    start_end_cells = my_maze.add_start_end_to_group()  
+    start_end_cells = my_maze.add_start_end_to_group()
+
+    if bonuses:
+        bonuse_tp = [MazeBonuses(*my_maze.get_random_cell(), "teleport") for _ in range((my_maze.width + my_maze.height)//2)]
+        bonuse_speed_up = [MazeBonuses(*my_maze.get_random_cell(), "speed_up") for _ in range(4)]
+        bonuse_speed_down = [MazeBonuses(*my_maze.get_random_cell(), "speed_down") for _ in range(4)]
+        bonuses_group = pygame.sprite.Group(*bonuse_tp, *bonuse_speed_up, *bonuse_speed_down)
+    
 
     player_0 = Player(0)
     group_players = pygame.sprite.Group()
@@ -147,6 +198,7 @@ def start_game(alg, width, height, filename, solution, players_count):
         player_1 = Player(1)
         group_players.add(player_1)
         Globals.END_GAME_TIME[1] = False
+
     start_time = time()
 
     while True:
@@ -166,9 +218,15 @@ def start_game(alg, width, height, filename, solution, players_count):
 
         walls_sprites_list.update() 
         solution_sprites_list.update()
-        group_players.update(walls_sprites_list, start_end_cells.sprites()[1])
-
+        group_players.update(walls_sprites_list, start_end_cells.sprites()[1],
+                            size_convert(width), size_convert(height),
+                            bonuses)
         start_end_cells.update()
+        if bonuses:
+            bonuses_group.update(player_0, my_maze)
+        if players_count == 2 and bonuses:
+            bonuses_group.update(player_1, my_maze)
+        
 
 
         screen.fill(Globals.SURFACE_COLOR)
@@ -176,6 +234,8 @@ def start_game(alg, width, height, filename, solution, players_count):
         solution_sprites_list.draw(screen)
         start_end_cells.draw(screen)
         group_players.draw(screen)
+        if bonuses:
+            bonuses_group.draw(screen)
         
         pygame.display.flip() 
         clock.tick(60)
