@@ -1,4 +1,6 @@
 import pygame
+from pathlib import PurePath
+
 from maze import Maze, Cell, conv_ind
 from time import time
 
@@ -49,7 +51,8 @@ class MazeBonuses(pygame.sprite.Sprite):
     def __init__(self, x, y, type):
         super().__init__()
         self.type = type
-        self.image = pygame.image.load("bonus.png")
+        path_bonus = PurePath('images', 'bonus.png')
+        self.image = pygame.image.load(path_bonus)
         self.rect = self.image.get_rect()
         self.rect.x = x * Globals.CELL_SIZE
         self.rect.y = y * Globals.CELL_SIZE
@@ -134,9 +137,11 @@ class Player(pygame.sprite.Sprite):
         super().__init__() 
         self.num = num
         self.speed = 2
-        self.image = pygame.image.load("Player_blue.png")
+        path_blue = PurePath('images', "Player_blue.png")
+        path_red = PurePath('images', "Player_red.png")
+        self.image = pygame.image.load(path_blue)
         if self.num:
-            self.image = pygame.image.load("Player_red.png")
+            self.image = pygame.image.load(path_red)
         self.rect = self.image.get_rect()
         self.rect.x = 1.25 * Globals.CELL_SIZE
         self.rect.y = 1.25 * Globals.CELL_SIZE
@@ -232,7 +237,8 @@ def start_game(alg, width, height, filename,
                                       size_convert(my_maze.height)))
 
     pygame.display.set_caption("Try to solve!")
-    pygame_icon = pygame.image.load('icon.png')
+    path_icon = PurePath('images', "icon.png")
+    pygame_icon = pygame.image.load(path_icon)
     pygame.display.set_icon(pygame_icon)
     clock = pygame.time.Clock() 
     
