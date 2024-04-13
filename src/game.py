@@ -72,24 +72,21 @@ class MazeBonuses(pygame.sprite.Sprite):
 
 
 class MazeWithGraphics(Maze):
-    def __init__(self, algorithm, size, run_alg=True, sol=False):
+    def __init__(self, algorithm, size, run_alg=True):
         super().__init__(algorithm, size, run_alg)
-        
+        self.elems_to_draw = None
+
+    def set_elems_to_draw(self, show_path):
         self.solve()
         self.elems_to_draw = [[MazeElementWithGraphics(i, j, 
-                                                       self.maze[j][i], sol)
+                                                       self.maze[j][i], show_path)
                                  for i in range(conv_ind(self.width))] 
                                      for j in range(conv_ind(self.height))]
-
+        
 
     @classmethod        
-    def upload(cls, path, algorithm, solution):
-        new = super().upload(path, algorithm)
-        if solution:
-            new.solve()
-        new.elems_to_draw = [[MazeElementWithGraphics(i, j, new.maze[j][i]) 
-                                for i in range(conv_ind(new.width))] 
-                                    for j in range(conv_ind(new.height))]
+    def upload(cls, path, algorithm):
+        new = super(MazeWithGraphics, cls).upload(path, algorithm)
         return new
     
 
@@ -229,9 +226,11 @@ def start_game(alg, width, height, filename,
                solution, players_count, bonuses):
     pygame.init()
     if filename:
-        my_maze = MazeWithGraphics.upload(filename, alg, solution)
+        my_maze = MazeWithGraphics.upload(filename, alg)
     else:
-        my_maze = MazeWithGraphics(alg, (width, height), sol=solution)
+        my_maze = MazeWithGraphics(alg, (width, height))
+    
+    my_maze.set_elems_to_draw(solution)
 
     screen = pygame.display.set_mode((size_convert(my_maze.width), 
                                       size_convert(my_maze.height)))
