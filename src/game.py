@@ -1,8 +1,7 @@
 import pygame
 from pathlib import PurePath
-
-from src.maze import Maze, Cell, conv_ind
 from time import time
+from src.maze import Maze, Cell, conv_ind
 
 
 class Globals():
@@ -57,6 +56,7 @@ class MazeBonuses(pygame.sprite.Sprite):
         self.rect.x = x * Globals.CELL_SIZE
         self.rect.y = y * Globals.CELL_SIZE
 
+
     def update(self, player, maze):
         if self.rect.colliderect(player.rect) and self.type == "speed_up":
             player.speed *= 1.1
@@ -76,10 +76,12 @@ class MazeWithGraphics(Maze):
         super().__init__(algorithm, size, run_alg)
         self.elems_to_draw = None
 
+
     def set_elems_to_draw(self, show_path):
         self.solve()
         self.elems_to_draw = [[MazeElementWithGraphics(i, j, 
-                                                       self.maze[j][i], show_path)
+                                                       self.maze[j][i], 
+                                                       show_path)
                                  for i in range(conv_ind(self.width))] 
                                      for j in range(conv_ind(self.height))]
         
@@ -102,7 +104,8 @@ class MazeWithGraphics(Maze):
                 MazeElementWithGraphics(
                     conv_ind(self.width) - 2, 
                     conv_ind(self.height) - 2, 
-                    self.maze[conv_ind(self.height) - 2][conv_ind(self.width) - 2],
+                    self.maze[conv_ind(self.height) - 2]\
+                        [conv_ind(self.width) - 2],
                     None)
         
         start_end_cells.add(self.elems_to_draw[1][1], 
@@ -169,7 +172,6 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.x += self.speedx
         self.rect.y += self.speedy
-        
 
         if self.rect.left <= 0 or self.rect.right >= width_limit:
             self.rect.x = old_x
@@ -177,11 +179,11 @@ class Player(pygame.sprite.Sprite):
         if self.rect.top <= 0 or self.rect.bottom >= height_limit:
             self.rect.y = old_y
     
-
         for wall in walls_sprites_list:
             if self.rect.colliderect(wall.rect):
                 self.rect.x = old_x
                 self.rect.y = old_y
+
                 if (keystate[keys['destroy'][self.num]] and  
                         Globals.COUNT_DESTROYED_WALLS[self.num] < 3 and
                         bonuses):
@@ -189,8 +191,6 @@ class Player(pygame.sprite.Sprite):
                     Globals.COUNT_DESTROYED_WALLS[self.num] += 1 
                     wall.kill()
                 
-
-        # TODO: Add check on end cell
         if (self.rect.colliderect(end_cell.rect) and 
                 not Globals.END_GAME_TIME[self.num]):
             
@@ -225,6 +225,7 @@ def print_winner(start_time, players_count):
 def start_game(alg, width, height, filename,
                solution, players_count, bonuses):
     pygame.init()
+
     if filename:
         my_maze = MazeWithGraphics.upload(filename, alg)
     else:
@@ -241,7 +242,6 @@ def start_game(alg, width, height, filename,
     pygame.display.set_icon(pygame_icon)
     clock = pygame.time.Clock() 
     
-
     walls_sprites_list = my_maze.add_walls_to_group()
     solution_sprites_list = my_maze.add_solution_to_group()
     start_end_cells = my_maze.add_start_end_to_group()
@@ -279,8 +279,6 @@ def start_game(alg, width, height, filename,
                 pygame.quit()  
                 quit()
             print_winner(start_time, players_count)
-
-            
 
         walls_sprites_list.update() 
         solution_sprites_list.update()

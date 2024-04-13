@@ -73,7 +73,6 @@ class Maze:
     def get_random_cell(self):
         while self.maze[y := conv_ind(random.randint(1, self.height - 1))]\
             [x := conv_ind(random.randint(1, self.width - 1))] != 0:
-            
             pass
 
         self.maze[y][x] = -1
