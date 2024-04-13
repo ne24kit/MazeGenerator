@@ -1,98 +1,92 @@
-# Импортируем необходимые модули
-import heapq  # Модуль для работы с очередью с приоритетами
+import heapq
 
 
-# Определяем класс узла графа
 class Node:
     def __init__(self, x, y):
-        self.x = x  # Координата x узла на карте
-        self.y = y  # Координата y узла на карте
-        self.g = 0  # Расстояние от начального узла до текущего узла
-        self.h = 0  # Примерное расстояние от текущего узла до конечного узла
-        self.f = 0  # Сумма g и h
-        self.parent = None  # Родительский узел, используется для восстановления пути
+        self.x = x  # x coordinate of the node on the map
+        self.y = y  # y coordinate of the node on the map
+        self.g = 0  # distance from start node to current node
+        self.h = 0  # distance from current node to target node
+        self.f = 0  # sum of g and h
+        self.parent = None  # parent node, used for path recovery
 
-    # Переопределяем оператор сравнения для сравнения узлов
+    # redefine the comparison operator to compare nodes
     def __lt__(self, other):
         return self.f < other.f
 
-    # Переопределяем оператор равенства для сравнения узлов
+    # redefine the equality operator to compare nodes
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
     
-
+    # redefine the hash operator
     def __hash__(self):
         return hash((self.x, self.y))
 
-# Определяем функцию для нахождения пути с помощью алгоритма A*
+# function to find the path using algorithm A*
 def astar(start, end, maze):
-    # Создаем начальный и конечный узлы
+
     start_node = Node(start[0], start[1])
     end_node = Node(end[0], end[1])
 
-    # Инициализируем очередь с приоритетами
+    # initialise the priority queue
     open_list = []
     heapq.heappush(open_list, start_node)
 
-    # Инициализируем множество посещенных узлов
+    # initialise the set of visited nodes
     closed_set = set()
 
-    # Пока очередь с приоритетами не пуста
     while open_list:
-        # Извлекаем узел с наименьшей оценкой f
+        # retrieve the node with the lowest score f
         current_node = heapq.heappop(open_list)
    
-        # Если текущий узел является конечным
         if current_node == end_node:
-            # Восстанавливаем путь от конечного узла до начального
+            # reconstruct the path from the end node to the start node
             path = []
             while current_node is not None:
                 path.append((current_node.x, current_node.y))
                 current_node = current_node.parent
             return path[::-1]
 
-        # Добавляем текущий узел в множество посещенных узлов
+        # add the current node to the set of visited nodes
         closed_set.add(current_node)
 
-        # Получаем соседние узлы
+        # Get the neighbouring nodes
         d_x_y = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         neighbors = []
         for dx, dy in d_x_y:
-            # Вычисляем координаты соседнего узла
             x = current_node.x + dx
             y = current_node.y + dy
-            # Игнорируем узлы за пределами карты
+            # ignore nodes outside the map
             if x < 0 or x >= len(maze) or y < 0 or y >= len(maze[0]):
                 continue
-            # Игнорируем препятствия
+            # ignore the obstacles
             if maze[x][y]:
                 continue
-            # Создаем новый узел и добавляем его в список соседей
+            # create a new node and add it to the list of neighbours
             neighbor = Node(x, y)
             neighbors.append(neighbor)
 
-        # Для каждого соседнего узла
         for neighbor in neighbors:
-            # Если соседний узел уже был посещен, пропускаем его
+            # visited neighbouring nodes skipped
             if neighbor in closed_set:
                 continue
 
-            # Вычисляем расстояние от начального узла до соседнего узла
             new_g = current_node.g + 1
 
-            # Если соседний узел уже находится в очереди с приоритетами
+            # if the neighbouring node is already in the priority queue
             if nfo := next((n for n in open_list if n == neighbor), None):
-                # Если новое расстояние до соседнего узла меньше, чем старое, обновляем значения g, h и f
                 if new_g < nfo.g:
+                    # update the values of g, h and f
                     nfo.g = new_g
                     nfo.h = (end_node.x - nfo.x) ** 2 + \
                         (end_node.y - nfo.y) ** 2
                     nfo.f = nfo.g + nfo.h
                     nfo.parent = current_node
-                    # Обновляем приоритет соседнего узла в очереди с приоритетами
+                    # update the priority of the neighbouring node
                     heapq.heapify(open_list)
             else:
-                # Иначе добавляем соседний узел в очередь с приоритетами и вычисляем значения g, h и f
+                # add a neighbouring node to the priority queue
+                # calculate the values of g, h and f
                 neighbor.g = new_g
                 neighbor.h = (end_node.x - neighbor.x) ** 2 + \
                     (end_node.y - neighbor.y) ** 2
@@ -100,5 +94,5 @@ def astar(start, end, maze):
                 neighbor.parent = current_node
                 heapq.heappush(open_list, neighbor)
 
-    # Если конечный узел недостижим, возвращаем None
+    # if the destination node is unreachable, return None
     return None
