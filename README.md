@@ -61,4 +61,5 @@
 
 ## Пример игрового процесса
 
-![](images\game_process.gif)
+![](images/game_process.gif)
+
